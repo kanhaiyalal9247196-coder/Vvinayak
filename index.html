@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Quotation Editor</title>
+<style>
+:root{--ink:#1c2230;--muted:#5d6577;--line:#d5d9e2;--bg:#eef0f5;--accent:#2b3a9f;--danger:#b3261e}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.4 "Segoe UI",system-ui,sans-serif}
+button{font:inherit;padding:6px 12px;border:1px solid var(--line);background:#fff;border-radius:4px;cursor:pointer}
+button:hover{border-color:var(--accent)}button.p{background:var(--accent);border-color:var(--accent);color:#fff}button.d{color:var(--danger)}
+input{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:4px;width:100%;background:#fff;color:var(--ink)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+.f{display:flex;flex-direction:column;gap:2px;font-size:12px;color:var(--muted)}
+header{position:sticky;top:0;z-index:5;display:flex;gap:6px;flex-wrap:wrap;align-items:center;background:#fff;border-bottom:1px solid var(--line);padding:8px 12px}
+header b{margin-right:auto}
+main{display:grid;grid-template-columns:minmax(380px,480px) 1fr;gap:14px;padding:12px;align-items:start}
+#form{display:grid;gap:10px}
+fieldset{background:#fff;border:1px solid var(--line);border-radius:4px;margin:0;padding:10px 12px;display:grid;gap:8px}
+legend{font-weight:600;padding:0 4px}.g{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.is{display:flex;justify-content:space-between;align-items:center;color:var(--muted);gap:8px}
+.tot{display:grid;grid-template-columns:1fr auto;gap:2px 12px;margin:0}.tot dd{margin:0;text-align:right}
+#pv{position:sticky;top:56px;overflow:hidden}#sheetHost{width:210mm;transform-origin:top left}
+#toast{position:fixed;bottom:16px;left:50%;transform:translateX(-50%);background:#1c2230;color:#fff;padding:8px 16px;border-radius:4px;display:none;z-index:9}
+dialog{width:min(760px,95vw);border:1px solid var(--line);border-radius:6px;padding:14px}
+.lib{width:100%;border-collapse:collapse;margin-top:8px}.lib td,.lib th{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left}
+@media(max-width:900px){main{grid-template-columns:1fr}#pv{position:static}}
+
+/* ===== A4 quotation sheet (mirrors reference PDF) ===== */
+.sheet{width:210mm;min-height:297mm;padding:40mm 12mm 22mm;background:#fff;color:#000;position:relative;font:7.5pt/1.3 "Times New Roman",Times,serif;box-shadow:0 1px 6px rgba(0,0,0,.2)}
+.qt{font:400 16pt Arial,Helvetica,sans-serif;color:#2b3a9f;text-align:center;margin:7mm 0 0}
+.qh{margin:5mm 0 10mm}
+.blk{width:100%;border-collapse:collapse;margin-top:5mm;break-inside:avoid;table-layout:fixed}
+.blk th,.blk td{border:1px solid #000;padding:1px 4px;text-align:left;vertical-align:middle}
+.hd{background:#e2e2e2;font-weight:700}.c{text-align:center!important}
+.draw{width:47.4%;padding:0!important;vertical-align:top!important}.specs{padding:0!important;vertical-align:top!important}
+.dim{font:700 13px "Times New Roman",serif;fill:#2f6fe0}.cap{font:11px "Times New Roman",serif;fill:#000}
+.in{border-collapse:collapse;width:calc(100% + 2px);margin:-1px;table-layout:fixed}
+.in th,.in td{border:1px solid #000;padding:1px 4px;font-size:7.5pt}
+.in thead th{text-align:center;font-weight:700}.in .num td{text-align:center}
+.lab th{width:30%;text-align:left}.lab td{height:4.6mm}
+.sum .bank{vertical-align:top;text-transform:uppercase;line-height:1.35}
+.sum td.r{text-align:right;width:23%}.sum td.u{width:11%}.sum .b td{font-weight:700;background:#e2e2e2}
+.foot{position:absolute;left:12mm;right:12mm;bottom:14mm;display:flex;justify-content:space-between;font:8.5pt Arial,Helvetica,sans-serif}
+#sheetHost .e{display:inline-block;min-width:1.5em;outline:none;border-radius:1px;cursor:text}
+#sheetHost .e:hover{background:#fff8c5}#sheetHost .e:focus{background:#ffee8a}
+#sheetHost .e:empty{min-width:4em;background:#f1f4fb}#sheetHost .e:empty::before{content:attr(data-ph);color:#999}
+.lab td .e{display:block;min-height:1em}
+.hint{font-size:12px;color:var(--muted);margin:0 0 6px}
+@page{size:A4;margin:10mm 0 14mm}
+@media print{
+ body{background:#fff}.no-print{display:none!important}
+ main{display:block;padding:0}#sheetHost .e,#sheetHost .e:hover,#sheetHost .e:focus,#sheetHost .e:empty{background:none!important;min-width:0}#sheetHost .e:empty::before{content:none}#pv{position:static;overflow:visible;height:auto!important}
+ #sheetHost{transform:none!important}.sheet{padding-top:30mm;min-height:0;box-shadow:none}
+ .foot{position:fixed;bottom:0}
+}
+</style></head>
+<body>
+<header class="no-print">
+ <b>Quotation Editor</b>
+ <button class="p" data-a="save">Save Quotation</button>
+ <button data-a="print">Download PDF</button>
+ <button data-a="print">Print</button>
+ <button data-a="new">Create New Quotation</button>
+ <button data-a="dup">Duplicate Quotation</button>
+ <button data-a="rev">New Revision</button>
+ <button data-a="lib">Saved quotations</button>
+</header>
+<main>
+ <section id="form" class="no-print"></section>
+ <section><p class="hint no-print">Click any text on the quotation to edit it. Calculated values (areas, amounts, totals) update automatically.</p><div id="pv"><div id="sheetHost"></div></div></section>
+</main>
+<dialog id="lib" class="no-print">
+ <div style="display:flex;gap:8px"><input id="q" placeholder="Search by quotation no. or client name"><input id="df" type="date" title="From"><input id="dt" type="date" title="To"><button data-a="close">Close</button></div>
+ <table class="lib"><thead><tr><th>Quotation no.</th><th>Rev</th><th>Client</th><th>Date</th><th>Grand total</th><th>Created</th><th>Updated</th><th></th></tr></thead><tbody id="rows"></tbody></table>
+</dialog>
+<div id="toast" role="status"></div>
+<script>
+// ---------- exact decimal maths (BigInt, scaled integers; no floating point) ----------
+const rdiv=(n,d)=>(2n*n+d)/(2n*d);                       // round half up
+const P=(v,dp)=>{v=String(v??'').trim();if(!/^\d*\.?\d*$/.test(v)||v===''||v==='.')return 0n;
+  const [i,f='']=v.split('.');let n=BigInt((i||'0')+f.slice(0,dp).padEnd(dp,'0'));if(f.length>dp&&f[dp]>='5')n+=1n;return n};
+const I=v=>BigInt(Math.max(0,parseInt(v)||0));
+function fmt(n,dp=2,g=true){const neg=n<0n;let s=(neg?-n:n).toString().padStart(dp+1,'0');let i=s.slice(0,-dp),f=s.slice(-dp);
+  if(g&&i.length>3)i=i.slice(0,-3).replace(/\B(?=(\d{2})+(?!\d))/g,',')+','+i.slice(-3);return(neg?'-':'')+i+'.'+f}
+function calcItem(it){const w=I(it.width_mm),h=I(it.height_mm),q=I(it.qty),r=P(it.rate,2);
+  const auto=rdiv(w*h*107639n,10n**7n),ov=P(it.area_override,4),a=ov>0n?ov:auto;      // sq ft x 1e4
+  return{q,a,auto,sqm:rdiv(w*h*q,100n),area:a*q,each:rdiv(a*r,10000n),amt:rdiv(a*q*r,10000n)}}
+function calcAll(S){const cs=S.items.map(calcItem),c=S.charges,sum=cs.reduce((a,x)=>a+x.amt,0n);
+  const sub=c.sub_ov!==''?P(c.sub_ov,2):sum,gst=rdiv(sub*P(c.gst,2),10000n);
+  const grand=c.grand_ov!==''?P(c.grand_ov,2):sub+gst+P(c.carting,2)+P(c.loading,2);
+  const qty=cs.reduce((a,x)=>a+x.q,0n),area=cs.reduce((a,x)=>a+x.area,0n);
+  return{cs,sub,gst,grand,qty,area,avg:area>0n?rdiv(grand*10000n,area):0n}}
+
+// ---------- state ----------
+const SK=['profile','coating','locking','glass','design_remark','window_remark','mesh'];
+const SL=['Profile System','Coating','Locking System','Glass','Design Remark','Window Remark','MeshType'];
+const today=()=>new Date().toISOString().slice(0,10);
+const blankItem=n=>({code:'W'+n,type:'Window',design:'',panels:1,width_mm:'',height_mm:'',qty:1,rate:'',area_override:'',specs:Object.fromEntries(SK.map(k=>[k,'']))});
+const sample=()=>({id:null,quote_no:'EST/0283/26-27',revision:1,date:'2026-10-21',page:'1',client:'NEXORA HOTEL',location:'',reference:'',subject:'',
+ items:[{code:'W1',type:'Window',design:'Fix In Single Part',panels:1,width_mm:1143,height_mm:2362,qty:4,rate:'890',area_override:'',
+  specs:{profile:'50 MM Door & Window Series',coating:'Powder Coating',locking:'',glass:'20 MM DGU GLASS',design_remark:'',window_remark:'',mesh:''}}],
+ charges:{gst:'18',carting:'2500',loading:'1500',sub_ov:'',grand_ov:''},
+ bank:{name:'HDFC',branch:'RAKANPUR',acc_name:'ANANTAM ALUMINIUM SYSTEMS',acc_no:'5020 0115 2528 22',ifsc:'HDFC0003049',acc_type:'CURRENT',upi:'9408639619@HDFCBANK'}});
+let S=sample();
+const $=s=>document.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const fd=s=>{if(!s)return'';const[y,m,d]=s.slice(0,10).split('-');return`${d}-${'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')[+m-1]}-${y}`};
+const db={get(){try{return JSON.parse(localStorage.getItem('quotes')||'[]')}catch{return[]}},set(a){try{localStorage.setItem('quotes',JSON.stringify(a));return true}catch{toast('Browser storage is unavailable; use Print / Save as PDF.');return false}}};
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(toast.t);toast.t=setTimeout(()=>t.style.display='none',2600)}
+
+// ---------- quotation sheet ----------
+function drawing(w,h,n){const W=+w||1000,H=+h||1000,s=Math.min(300/W,235/H),fw=W*s,fh=H*s,x=(388-fw)/2,y=36,g=Math.max(3,Math.min(10,fw/10)),k=Math.max(1,Math.min(6,+n||1));
+  let m='';for(let i=1;i<k;i++){const gx=x+g+(fw-2*g)*i/k;m+=`<rect x="${gx-g/2}" y="${y+g}" width="${g}" height="${fh-2*g}" fill="#bdbdbd" stroke="#777"/>`}
+  return`<svg viewBox="0 0 388 300" width="100%"><defs><linearGradient id="gl" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#d6f0fb"/><stop offset="1" stop-color="#7cc6ec"/></linearGradient></defs>
+  <text x="${x+fw/2}" y="20" text-anchor="middle" class="dim">${esc(W)} W</text>
+  <rect x="${x}" y="${y}" width="${fw}" height="${fh}" fill="#bdbdbd" stroke="#666"/><rect x="${x+g/2}" y="${y+g/2}" width="${fw-g}" height="${fh-g}" fill="#e4e4e4" stroke="#777"/>
+  <rect x="${x+g}" y="${y+g}" width="${fw-2*g}" height="${fh-2*g}" fill="url(#gl)" stroke="#777"/>${m}
+  <text transform="translate(${x+fw+55},${y+fh/2}) rotate(90)" text-anchor="middle" class="dim">${esc(H)} H</text>
+  <text x="194" y="296" text-anchor="middle" class="cap">Viewed from Inside</text></svg>`}
+let EDIT=null;                                   // field being typed in: keeps raw text so formatting doesn't fight the caret
+const E=(p,shown,ph='')=>`<span class="e" contenteditable="true" spellcheck="false" data-p="${p}" data-ph="${ph}">${esc(EDIT&&EDIT.p===p?EDIT.text:shown)}</span>`;
+function sheet(S){const T=calcAll(S),b=S.bank,c=S.charges;
+  const items=S.items.map((it,n)=>{const x=T.cs[n],q=`items.${n}.`;return`<table class="blk"><tr><th colspan="2" class="hd">${E(q+'code',it.code)} - ${E(q+'design',it.design||it.type)} -</th></tr><tr>
+   <td class="draw">${drawing(it.width_mm,it.height_mm,it.panels)}</td><td class="specs">
+   <table class="in"><thead><tr><th colspan="6" class="hd c">Computed Values</th></tr>
+   <tr><th colspan="2">Area</th><th rowspan="2">QTY No.</th><th rowspan="2">Rate/Sq Ft. Rs.</th><th rowspan="2">Value / Window</th><th rowspan="2">Total Amount</th></tr><tr><th>SQM</th><th>SQFT</th></tr></thead>
+   <tbody><tr class="num"><td>${fmt(x.sqm,4,0)}</td><td>${fmt(x.area,4,0)}</td><td>${E(q+'qty',it.qty)}</td><td>${E(q+'rate',fmt(P(it.rate,2)))}</td><td>${fmt(x.each)}</td><td>${fmt(x.amt)}</td></tr></tbody></table>
+   <table class="in lab"><tr><th>Size</th><td>${E(q+'width_mm',it.width_mm)} mm x ${E(q+'height_mm',it.height_mm)} mm</td></tr>
+   ${SK.map((k,i)=>`<tr><th>${SL[i]}</th><td>${E(q+'specs.'+k,it.specs[k])}</td></tr>`).join('')}</table></td></tr></table>`}).join('');
+  const bl=[['BANK','name','.'],['BRANCH','branch','.'],['ACCOUNT NAME','acc_name','.'],['ACCOUNT NUMBER','acc_no','.'],['IFSC','ifsc','.'],['ACCOUNT TYPE','acc_type','.'],['VPA','upi','']].map(([l,k,p])=>`<div>${l} - ${E('bank.'+k,b[k])}${p}</div>`).join('');
+  const r=(l,v,u,cl='')=>`<tr class="${cl}"><td>${l}</td><td class="r">${v}</td><td class="u">${u}</td></tr>`;
+  const rev=+S.revision>0||(EDIT&&EDIT.p==='revision')?' - Rev.'+E('revision',S.revision):'';
+  return`<div class="sheet"><h1 class="qt">QUOTATION</h1><div class="qh">
+  <div><b>Quotation No. :</b> ${E('quote_no',S.quote_no,'(auto-generated on save)')}${rev}</div><div><b>Client Name :</b> ${E('client',S.client,'client name')}</div><div><b>Project Location :</b> ${E('location',S.location)}</div>
+  <div><b>Reference :</b> ${E('reference',S.reference)}</div><div><b>Subject :</b> ${E('subject',S.subject)}</div><div><b>Total Quantity :</b> ${T.qty}</div>
+  <div><b>Total Area :</b> ${fmt(T.area,4,0)} Sq.Ft</div></div>${items}
+  <table class="blk sum"><tr><th class="hd">Bank Details</th><th class="hd" colspan="3">Quote Total</th></tr>
+  <tr><td rowspan="8" class="bank">${bl}</td><td>Total Quantity</td><td class="r">${T.qty}</td><td class="u">Nos</td></tr>
+  ${r('Total Sq. Ft.',fmt(T.area,4,0),'Sq. Ft.')}${r('Sub Total',fmt(T.sub),'Rs.','b')}${r(`GST (${E('charges.gst',fmt(P(c.gst,2)))}%)`,fmt(T.gst),'Rs.')}
+  ${r('CARTING',E('charges.carting',fmt(P(c.carting,2))),'Rs.')}${r('LOADING &amp; UNLOADING',E('charges.loading',fmt(P(c.loading,2))),'Rs.')}${r('Grand Total',fmt(T.grand),'Rs.','b')}${r('Average Price Per Sq. Ft.',fmt(T.avg),'Rs.')}</table>
+  <div class="foot"><span>${fd(S.date)}</span><span>Page ${E('page',S.page)}</span></div></div>`}
+
+// ---------- form ----------
+const inp=(l,p,v,a='')=>`<label class="f"><span>${l}</span><input data-p="${p}" value="${esc(v)}" ${a}></label>`;
+function form(){const T=calcAll(S),c=S.charges,b=S.bank;
+  $('#form').innerHTML=`<datalist id="types"><option>Window<option>Door<option>Partition<option>Other</datalist>
+  <fieldset><legend>Quotation</legend><div class="g">${inp('Quotation no.','quote_no',S.quote_no,'placeholder="Auto on first save"')}${inp('Revision','revision',S.revision,'type="number" min="0"')}
+  ${inp('Quotation date','date',S.date,'type="date"')}${inp('Page number','page',S.page)}</div></fieldset>
+  <fieldset><legend>Client</legend>${inp('Client name','client',S.client)}${inp('Project location','location',S.location)}${inp('Reference','reference',S.reference)}${inp('Subject','subject',S.subject)}</fieldset>
+  ${S.items.map((it,i)=>`<fieldset><legend>Item ${i+1}</legend><div class="is"><span data-sum="${i}"></span><span><button data-a="idup" data-i="${i}">Duplicate</button> <button class="d" data-a="idel" data-i="${i}">Delete</button></span></div>
+  <div class="g">${inp('Item code',`items.${i}.code`,it.code)}${inp('Item / window type',`items.${i}.type`,it.type,'list="types"')}${inp('Window design',`items.${i}.design`,it.design,'placeholder="e.g. Fix In Single Part"')}
+  ${inp('Panels in drawing',`items.${i}.panels`,it.panels,'type="number" min="1" max="6"')}${inp('Width (mm)',`items.${i}.width_mm`,it.width_mm,'type="number" min="1"')}${inp('Height (mm)',`items.${i}.height_mm`,it.height_mm,'type="number" min="1"')}
+  ${inp('Quantity',`items.${i}.qty`,it.qty,'type="number" min="1"')}${inp('Rate per sq ft (₹)',`items.${i}.rate`,it.rate,'type="number" min="0" step="0.01"')}
+  ${inp('Area per item (sq ft)',`items.${i}.area_override`,it.area_override,'type="number" step="0.0001" placeholder="Auto: '+fmt(T.cs[i].a,4,0)+'"')}</div>
+  <div class="g">${SK.map((k,j)=>inp(SL[j],`items.${i}.specs.${k}`,it.specs[k])).join('')}</div></fieldset>`).join('')}
+  <button data-a="iadd">Add item</button>
+  <fieldset><legend>Charges and totals</legend><div class="g">${inp('GST (%)','charges.gst',c.gst,'type="number" step="0.01"')}${inp('Carting (₹)','charges.carting',c.carting,'type="number" step="0.01"')}
+  ${inp('Loading & unloading (₹)','charges.loading',c.loading,'type="number" step="0.01"')}${inp('Subtotal override (₹)','charges.sub_ov',c.sub_ov,'type="number" step="0.01" placeholder="Auto"')}
+  ${inp('Grand total override (₹)','charges.grand_ov',c.grand_ov,'type="number" step="0.01" placeholder="Auto"')}</div><dl class="tot" id="tot"></dl></fieldset>
+  <fieldset><legend>Bank details</legend><div class="g">${inp('Bank name','bank.name',b.name)}${inp('Branch','bank.branch',b.branch)}${inp('Account name','bank.acc_name',b.acc_name)}
+  ${inp('Account number','bank.acc_no',b.acc_no)}${inp('IFSC','bank.ifsc',b.ifsc)}${inp('Account type','bank.acc_type',b.acc_type)}${inp('UPI / VPA','bank.upi',b.upi)}</div></fieldset>`;
+  refresh()}
+function refresh(){const T=calcAll(S);$('#sheetHost').innerHTML=sheet(S);fit();
+  document.querySelectorAll('[data-sum]').forEach(e=>{const x=T.cs[e.dataset.sum];e.textContent=`${fmt(x.area,4,0)} sq ft · ₹${fmt(x.amt)}`});
+  const t=$('#tot');if(t)t.innerHTML=`<dt>Subtotal</dt><dd>₹${fmt(T.sub)}</dd><dt>GST</dt><dd>₹${fmt(T.gst)}</dd><dt>Grand total</dt><dd><b>₹${fmt(T.grand)}</b></dd><dt>Average per sq ft</dt><dd>₹${fmt(T.avg)}</dd>`}
+function fit(){const w=$('#pv').clientWidth,k=Math.min(1,w/794),h=$('#sheetHost');h.style.transform=`scale(${k})`;$('#pv').style.height=h.offsetHeight*k+'px'}
+addEventListener('resize',fit);
+function setPath(p,v){const k=p.split('.');let o=S;while(k.length>1)o=o[k.shift()];o[k[0]]=v}
+$('#form').addEventListener('input',e=>{const p=e.target.dataset.p;if(!p)return;EDIT=null;setPath(p,e.target.value);refresh()});
+
+// ---- edit directly on the quotation sheet ----
+const NUM=/(width_mm|height_mm|qty|rate|panels|charges\.(gst|carting|loading))$/;
+const caret=el=>{const s=getSelection();if(!s.rangeCount)return 0;const r=s.getRangeAt(0).cloneRange();r.selectNodeContents(el);r.setEnd(s.anchorNode,s.anchorOffset);return r.toString().length};
+const setCaret=(el,o)=>{const t=el.firstChild,r=document.createRange();if(t&&t.nodeType===3)r.setStart(t,Math.min(o,t.length));else r.setStart(el,0);r.collapse(true);const s=getSelection();s.removeAllRanges();s.addRange(r)};
+const host=$('#sheetHost');
+host.addEventListener('input',e=>{const el=e.target.closest('.e');if(!el)return;const p=el.dataset.p,t=el.textContent;
+  const v=NUM.test(p)?t.replace(/[^\d.]/g,''):t;setPath(p,v);EDIT={p,text:t};
+  const f=document.querySelector(`#form [data-p="${p}"]`);if(f)f.value=v;
+  const o=caret(el);refresh();const n=host.querySelector(`[data-p="${p}"]`);if(n){n.focus();setCaret(n,o)}});
+host.addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();e.target.blur()}});
+host.addEventListener('paste',e=>{if(!e.target.closest('.e'))return;e.preventDefault();document.execCommand('insertText',false,e.clipboardData.getData('text').replace(/\s+/g,' '))});
+host.addEventListener('focusout',e=>{if(e.relatedTarget&&e.relatedTarget.closest&&e.relatedTarget.closest('.e'))return;if(EDIT){EDIT=null;refresh()}});
+
+// ---------- save / library ----------
+function nextNo(){const fy=(()=>{const y=+S.date.slice(0,4),s=+S.date.slice(5,7)>=4?y:y-1;return String(s%100).padStart(2,'0')+'-'+String((s+1)%100).padStart(2,'0')})();
+  const mx=db.get().reduce((m,q)=>{const r=q.quote_no.match(/^EST\/(\d+)\/(.+)$/);return r&&r[2]===fy?Math.max(m,+r[1]):m},0);return`EST/${String(mx+1).padStart(4,'0')}/${fy}`}
+function valid(){if(!S.client.trim())return'Enter the client name.';for(const[n,i]of S.items.entries())if(!(+i.width_mm>0&&+i.height_mm>0&&+i.qty>0))return`Item ${n+1}: width, height and quantity must be greater than 0.`;return''}
+function save(){const e=valid();if(e){toast(e);return false}
+  if(!S.quote_no.trim())S.quote_no=nextNo();
+  const a=db.get(),now=new Date().toISOString();
+  if(!S.id)S.id=Date.now().toString(36);
+  if(a.some(q=>q.id!==S.id&&q.quote_no===S.quote_no&&+q.revision===+S.revision)){toast('That quotation number and revision already exist.');return false}
+  const i=a.findIndex(q=>q.id===S.id),rec={...S,created:i>=0?a[i].created:now,updated:now};i>=0?a[i]=rec:a.unshift(rec);
+  if(db.set(a)){toast('Saved '+S.quote_no);form();return true}return false}
+function branch(kind){if(!save())return;const c=structuredClone(S);c.id=null;c.date=today();
+  if(kind==='rev'){c.revision=Math.max(...db.get().filter(q=>q.quote_no===S.quote_no).map(q=>+q.revision))+1}else{c.quote_no='';c.revision=0}
+  S=c;if(kind==='dup')c.quote_no=nextNo();if(save())toast(kind==='rev'?'Created Rev.'+S.revision:'Duplicated as '+S.quote_no)}
+function lib(){const q=$('#q').value.toLowerCase(),f=$('#df').value,t=$('#dt').value;
+  const rows=db.get().filter(r=>(!q||r.quote_no.toLowerCase().includes(q)||r.client.toLowerCase().includes(q))&&(!f||r.date>=f)&&(!t||r.date<=t));
+  $('#rows').innerHTML=rows.map(r=>`<tr><td>${esc(r.quote_no)}</td><td>${esc(r.revision)}</td><td>${esc(r.client)}</td><td>${fd(r.date)}</td><td>₹${fmt(calcAll(r).grand)}</td><td>${fd(r.created)}</td><td>${fd(r.updated)}</td>
+   <td><button data-a="open" data-id="${r.id}">Open</button> <button class="d" data-a="rm" data-id="${r.id}">Delete</button></td></tr>`).join('')||'<tr><td colspan="8">No saved quotations match.</td></tr>'}
+['q','df','dt'].forEach(i=>$('#'+i).addEventListener('input',lib));
+document.addEventListener('click',e=>{const a=e.target.dataset.a;if(!a)return;const i=+e.target.dataset.i,id=e.target.dataset.id;
+  if(a==='save')save();else if(a==='print')print();else if(a==='dup'||a==='rev')branch(a);
+  else if(a==='new'){if(confirm('Start a new quotation? Unsaved changes will be lost.')){S=sample();S.id=null;S.quote_no='';S.revision=0;S.date=today();S.client='';S.items=[blankItem(1)];S.charges={gst:'18',carting:'0',loading:'0',sub_ov:'',grand_ov:''};form()}}
+  else if(a==='iadd'){S.items.push(blankItem(S.items.length+1));form()}
+  else if(a==='idup'){const c=structuredClone(S.items[i]);c.code='W'+(S.items.length+1);S.items.splice(i+1,0,c);form()}
+  else if(a==='idel'){if(S.items.length>1&&confirm('Delete item '+(i+1)+'?')){S.items.splice(i,1);form()}}
+  else if(a==='lib'){lib();$('#lib').showModal()}else if(a==='close')$('#lib').close();
+  else if(a==='open'){S=db.get().find(r=>r.id===id);$('#lib').close();form()}
+  else if(a==='rm'){const r=db.get().find(x=>x.id===id);if(confirm(`Delete ${r.quote_no} (Rev.${r.revision}) for ${r.client}? This cannot be undone.`)){db.set(db.get().filter(x=>x.id!==id));lib()}}});
+form();
+</script></body></html>
