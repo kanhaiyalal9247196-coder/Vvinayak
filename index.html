@@ -7,7 +7,7 @@
 <style>
 :root{--ink:#1d2a33;--mute:#5d6b75;--line:#cfd8dc;--bg:#e9edef;--panel:#fff;--acc:#1f4e5f;--acc2:#e8f1f4}
 *{box-sizing:border-box}
-body{margin:0;font:14px/1.45 "Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+body{margin:0;font:14px/1.45 Calibri,Carlito,"Segoe UI",Arial,sans-serif;color:var(--ink);background:var(--bg)}
 .app{display:grid;grid-template-columns:minmax(320px,430px) 1fr;gap:16px;padding:16px;align-items:start}
 @media(max-width:980px){.app{grid-template-columns:1fr}}
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:14px;margin-bottom:12px}
@@ -26,33 +26,43 @@ button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-vis
 .bar{display:flex;gap:8px;flex-wrap:wrap}
 .note{font-size:12px;color:var(--mute);margin-top:6px}
 /* paper */
-.paper{background:#fff;width:210mm;max-width:100%;margin:0 auto;padding:12mm;box-shadow:0 2px 12px rgba(0,0,0,.15);font-family:Georgia,"Times New Roman",serif;color:#000;font-size:12px}
+.paper{background:#fff;width:210mm;max-width:100%;margin:0 auto;padding:12mm;box-shadow:0 2px 12px rgba(0,0,0,.15);font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif;color:#000;font-size:13px}
 .hd{display:flex;gap:14px;align-items:center;border-bottom:1px solid #999;padding-bottom:10px}
-.hd .l{flex:1;font-family:"Segoe UI",system-ui,sans-serif;font-size:11px;line-height:1.5}
+.hd .l{flex:1;font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif;font-size:12px;line-height:1.5}
 .hd .l b{font-size:14px;display:block}
-.hd .r{flex:1;text-align:center;font-family:"Segoe UI",system-ui,sans-serif}
+.hd .r{flex:1;text-align:center;font-family:Calibri,Carlito,"Segoe UI",Arial,sans-serif}
 .hd .r b{font-size:19px;display:block}
 .hd img{max-height:70px;max-width:150px;display:block;margin:0 auto 6px}
-.title{text-align:center;color:#1f2f8a;font:22px "Segoe UI",sans-serif;margin:16px 0 10px}
+.title{text-align:center;color:#1f2f8a;font:22px Calibri,Carlito,"Segoe UI",Arial,sans-serif;margin:16px 0 10px}
 .meta{line-height:1.6;margin-bottom:12px}
-.box{border:1px solid #000;margin-bottom:12px;break-inside:avoid}
+.box{border:1px solid #000;margin-bottom:12px;break-inside:avoid;page-break-inside:avoid}
+tr,td,th,img,svg{break-inside:avoid;page-break-inside:avoid}
 .box .cap{background:#e6e6e6;font-weight:bold;padding:3px 6px;border-bottom:1px solid #000}
-.wbody{display:grid;grid-template-columns:44% 56%}
+.wbody{display:grid;grid-template-columns:44% 56%;align-items:stretch}
+.wr{display:flex;flex-direction:column;min-width:0}
+.wr table:last-child{flex:1;height:100%;margin-top:-1px}
+.wl{display:flex;flex-direction:column;justify-content:center;align-items:center}
 .wl{text-align:center;padding:6px;border-right:1px solid #000}
 .wl svg{width:100%;height:auto;max-height:200px}
 table{border-collapse:collapse;width:100%}
-td,th{border:1px solid #000;padding:2px 5px;font-size:11.5px}
+td,th{border:1px solid #000;padding:2px 5px;font-size:12.5px}
 th{background:#f1f1f1}
 td.n{text-align:right}
 .tot td{border:1px solid #aaa}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:0}
 .foot{font-size:10.5px;margin-top:10px;white-space:pre-line}
+table.pg>thead>tr>td,table.pg>tbody>tr>td,table.pg>tfoot>tr>td{border:0;padding:0}
+table.pg>tbody>tr,table.pg>tbody>tr>td{break-inside:auto;page-break-inside:auto}
+.sp{height:0}
+.pf{text-align:right;font:11px Calibri,Carlito,"Segoe UI",Arial,sans-serif;color:#667;padding:6px 0 14px}
 @page{size:A4;margin:0}
 @media print{
  body{background:#fff}
  .app{display:block;padding:0}
  .editor{display:none}
- .paper{box-shadow:none;width:210mm;margin:0;padding:12mm}
+ .paper{box-shadow:none;width:100%;max-width:none;margin:0;padding:0 12mm}
+ .sp{height:12mm}
+ .pf{position:fixed;left:0;right:0;bottom:0;height:12mm;line-height:12mm;padding:0 12mm 0 0;margin:0;text-align:right;background:#fff;z-index:99;font-size:11px;color:#444;border-top:0.5px solid #bbb;display:block}
  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
 }
 </style>
@@ -76,24 +86,31 @@ td.n{text-align:right}
   <label>Client name</label><input data-q="client">
   <label>Project location</label><input data-q="loc">
   <div class="row"><div><label>Reference</label><input data-q="ref"></div><div><label>Subject</label><input data-q="subj"></div></div>
-  <label>GST % (0 = none)</label><input type="number" min="0" step="0.5" data-q="gst">
+  <label>GST % (0 = none, applied on windows + additional charges)</label><input type="number" min="0" step="0.5" data-q="gst">
+ </div>
+ <div class="panel">
+  <h2>Additional charges</h2>
+  <div id="extras"></div>
+  <div class="bar"><button class="ghost" id="addx">+ Add charge</button></div>
+  <div class="note">Examples: installation, transport, fitting, packing. They are added to the grand total.</div>
  </div>
  <div class="panel">
   <h2>Windows</h2>
   <div id="wins"></div>
   <div class="bar"><button id="add">+ Add window</button><button class="ghost" id="pdf">Save as PDF</button><button class="ghost" id="reset">Reset all</button></div>
-  <div class="note">Save as PDF opens the print dialog: choose “Save as PDF”, paper A4, margins none, and turn off “Headers and footers”.</div>
+  <div class="note">Save as PDF opens the print dialog: choose “Save as PDF”, paper A4, margins None (or Default), scale 100%. The browser header/footer text no longer prints, and each window block stays together on one page.</div>
  </div>
 </div>
 <div id="sheet" class="paper"></div>
 </div>
+<div class="pf">Powered by Gomez</div>
 
 <script>
 const KEY="quotation-maker-v1";
 const defC={name:"Anantam Aluminium Systems",tag:"Innovative Aluminium Solutions",addr:"25 E, Prime Industrial Park, Santej Vadasar Road, Santej, Kalol\nGandhinagar. Pincode - 382721\nState Name: GUJARAT",mobile:"+91 9408639619",email:"anantamaluminiumsystems@gmail.com",bank:"BANK - HDFC.\nBRANCH - RAKANPUR.\nACCOUNT NAME - ANANTAM ALUMINIUM SYSTEMS.\nACCOUNT NUMBER - 5020 0115 2528 22.\nIFSC - HDFC0003049.\nACCOUNT TYPE - CURRENT.\nVPA - 9408639619@HDFCBANK",terms:"",logo:""};
 const today=()=>new Date().toISOString().slice(0,10);
-const newWin=(n)=>({label:"W"+n,type:"2 Track 2 Shutter",shutters:2,w:1200,h:1200,qty:1,mode:"sqft",rate:0,profile:"27 MM Window Series",glass:"5 MM Clear Glass",coating:"",lock:"",remark:"",mesh:"",img:""});
-const def=()=>({c:{...defC},q:{no:"EST/0001/26-27",date:today(),client:"",loc:"",ref:"",subj:"",gst:0},wins:[newWin(1)]});
+const newWin=(n)=>({label:"W"+n,type:"2 Track 2 Shutter",w:1200,h:1200,qty:1,mode:"sqft",rate:0,profile:"27 MM Window Series",glass:"5 MM Clear Glass",coating:"",lock:"",remark:"",mesh:"",img:""});
+const def=()=>({c:{...defC},q:{no:"EST/0001/26-27",date:today(),client:"",loc:"",ref:"",subj:"",gst:0},wins:[newWin(1)],extras:[]});
 let S=def();
 try{const r=localStorage.getItem(KEY);if(r){const p=JSON.parse(r);S={...def(),...p,c:{...defC,...p.c},q:{...def().q,...p.q}}}}catch(e){}
 const save=()=>{try{localStorage.setItem(KEY,JSON.stringify(S))}catch(e){}};
@@ -106,42 +123,45 @@ function calc(w){
  return{sqm,sqft,per,total:per*w.qty,totSqft:sqft*w.qty};
 }
 function drawing(w){
- const W=+w.w||1,H=+w.h||1,k=Math.min(220/W,150/H),pw=W*k,ph=H*k,x=(300-pw)/2,y=(200-ph)/2+6,n=Math.max(1,+w.shutters||1),f=5;
+ const W=+w.w||1,H=+w.h||1,k=Math.min(220/W,150/H),pw=W*k,ph=H*k,x=(300-pw)/2,y=(200-ph)/2+6,m=/(\d+)\s*shutter/i.exec(w.type||""),n=m?Math.min(6,Math.max(1,+m[1])):2,f=5;
  let g=`<rect x="${x}" y="${y}" width="${pw}" height="${ph}" fill="#ccc" stroke="#777"/>`;
  const iw=(pw-2*f)/n;
  for(let i=0;i<n;i++)g+=`<rect x="${x+f+i*iw}" y="${y+f}" width="${iw}" height="${ph-2*f}" fill="#bfe3f7" stroke="#888"/><rect x="${x+f+i*iw+4}" y="${y+f+4}" width="${iw-8}" height="${ph-2*f-8}" fill="#d9f0fc" stroke="#999" stroke-width=".5"/>`;
- return `<svg viewBox="0 0 300 215"><text x="150" y="14" text-anchor="middle" font-size="12" font-weight="bold" fill="#2a5bd7" font-family="Georgia">${esc(w.w)} W</text>${g}<text x="${x+pw+10}" y="${y+ph/2}" font-size="12" font-weight="bold" fill="#2a5bd7" font-family="Georgia" transform="rotate(90 ${x+pw+10} ${y+ph/2})" text-anchor="middle">${esc(w.h)} H</text><text x="150" y="212" text-anchor="middle" font-size="10" font-family="Georgia">Viewed from Inside</text></svg>`;
+ return `<svg viewBox="0 0 300 215"><text x="150" y="14" text-anchor="middle" font-size="12" font-weight="bold" fill="#2a5bd7" font-family="Calibri, Carlito, Arial, sans-serif">${esc(w.w)} W</text>${g}<text x="${x+pw+10}" y="${y+ph/2}" font-size="12" font-weight="bold" fill="#2a5bd7" font-family="Calibri, Carlito, Arial, sans-serif" transform="rotate(90 ${x+pw+10} ${y+ph/2})" text-anchor="middle">${esc(w.h)} H</text><text x="150" y="212" text-anchor="middle" font-size="10" font-family="Calibri, Carlito, Arial, sans-serif">Viewed from Inside</text></svg>`;
 }
 function preview(){
  const c=S.c,q=S.q;let tq=0,ts=0,sub=0;
  const blocks=S.wins.map(w=>{
   const r=calc(w);tq+=+w.qty;ts+=r.totSqft;sub+=r.total;
   const row=(a,b)=>`<tr><td style="width:32%"><b>${a}</b></td><td>${esc(b)}</td></tr>`;
-  return `<div class="box"><div class="cap">${esc(w.label)} - ${esc(w.type)}</div><div class="wbody"><div class="wl">${w.img?`<img src="${w.img}" alt="" style="max-width:100%;max-height:200px;display:block;margin:0 auto"><div style="font-size:11px;margin-top:3px">${esc(w.w)} W x ${esc(w.h)} H mm</div>`:drawing(w)}</div><div>
+  return `<div class="box"><div class="cap">${esc(w.label)} - ${esc(w.type)}</div><div class="wbody"><div class="wl">${w.img?`<img src="${w.img}" alt="" style="max-width:100%;max-height:200px;display:block;margin:0 auto"><div style="font-size:11px;margin-top:3px">${esc(w.w)} W x ${esc(w.h)} H mm</div>`:drawing(w)}</div><div class="wr">
   <table><tr><th colspan="2">Area</th><th rowspan="2">Qty</th><th rowspan="2">${w.mode==="nos"?"Rate / Nos":"Rate / Sq Ft"} Rs.</th><th rowspan="2">Value / Window</th><th rowspan="2">Total Amount</th></tr>
   <tr><th>SQM</th><th>SQFT</th></tr>
   <tr><td class="n">${r.sqm.toFixed(4)}</td><td class="n">${r.sqft.toFixed(4)}</td><td class="n">${w.qty}</td><td class="n">${money(w.rate)}</td><td class="n">${money(r.per)}</td><td class="n">${money(r.total)}</td></tr></table>
-  <table style="margin-top:-1px">${row("Size",w.w+" mm x "+w.h+" mm")}${row("Profile System",w.profile)}${row("Coating",w.coating)}${row("Locking System",w.lock)}${row("Glass",w.glass)}${row("Window Remark",w.remark)}${row("Mesh Type",w.mesh)}</table></div></div></div>`;
+  <table>${row("Size",w.w+" mm x "+w.h+" mm")}${row("Profile System",w.profile)}${row("Coating",w.coating)}${row("Locking System",w.lock)}${row("Glass",w.glass)}${row("Window Remark",w.remark)}${row("Mesh Type",w.mesh)}</table></div></div></div>`;
  }).join("");
- const gst=sub*(+q.gst||0)/100,grand=sub+gst;
+ const ex=(S.extras||[]).filter(x=>x.label||x.amt),exT=ex.reduce((a,x)=>a+(+x.amt||0),0),gst=(sub+exT)*(+q.gst||0)/100,grand=sub+exT+gst;
  const d=q.date?new Date(q.date+"T00:00:00").toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}).replace(/ /g,"-"):"";
  const tr=(a,b,bold)=>`<tr${bold?' style="font-weight:bold"':""}><td>${a}</td><td class="n" style="width:42%">${b}</td></tr>`;
- document.getElementById("sheet").innerHTML=`
+ document.getElementById("sheet").innerHTML=`<table class="pg"><thead><tr><td><div class="sp"></div></td></tr></thead><tbody><tr><td>
  <div class="hd"><div class="l"><b>${esc(c.name)}</b>${esc(c.addr).replace(/\n/g,"<br>")}${c.mobile?"<br>Mobile Number :- "+esc(c.mobile):""}${c.email?"<br>E-MAIL:- "+esc(c.email):""}</div>
  <div class="r">${c.logo?`<img src="${c.logo}" alt="">`:""}<b>${esc(c.name)}</b>${esc(c.tag)}</div></div>
  <div class="title">QUOTATION</div>
  <div class="meta"><b>Quotation No. :</b> ${esc(q.no)}<br><b>Date :</b> ${esc(d)}<br><b>Client Name :</b> ${esc(q.client)}<br><b>Project Location :</b> ${esc(q.loc)}<br><b>Reference :</b> ${esc(q.ref)}<br><b>Subject :</b> ${esc(q.subj)}<br><b>Total Quantity :</b> ${tq}<br><b>Total Area :</b> ${ts.toFixed(4)} Sq.Ft</div>
  ${blocks}
  <div class="box"><div class="two"><div style="border-right:1px solid #000"><div class="cap">Bank Details</div><div style="padding:4px 6px;font-size:11px;white-space:pre-line">${esc(c.bank)}</div></div>
- <div><div class="cap">Quote Total</div><table class="tot">${tr("Total Quantity",tq+" Nos")}${tr("Total Sq. Ft.",ts.toFixed(4)+" Sq. Ft.")}${tr("Sub Total",money(sub)+" Rs.",1)}${gst?tr("GST @ "+q.gst+"%",money(gst)+" Rs."):""}${tr("Grand Total",money(grand)+" Rs.",1)}${tr("Average Price Per Sq. Ft.",money(ts?grand/ts:0)+" Rs.")}</table></div></div></div>
- ${c.terms?`<div class="foot"><b>Terms &amp; Notes</b>\n${esc(c.terms)}</div>`:""}`;
+ <div><div class="cap">Quote Total</div><table class="tot">${tr("Total Quantity",tq+" Nos")}${tr("Total Sq. Ft.",ts.toFixed(4)+" Sq. Ft.")}${tr("Sub Total",money(sub)+" Rs.",1)}${ex.map(x=>tr(esc(x.label||"Additional charge"),money(x.amt)+" Rs.")).join("")}${gst?tr("GST @ "+q.gst+"%",money(gst)+" Rs."):""}${tr("Grand Total",money(grand)+" Rs.",1)}${tr("Average Price Per Sq. Ft.",money(ts?grand/ts:0)+" Rs.")}</table></div></div></div>
+ ${c.terms?`<div class="foot"><b>Terms &amp; Notes</b>\n${esc(c.terms)}</div>`:""}</td></tr></tbody><tfoot><tr><td><div class="sp"></div></td></tr></tfoot></table>`;
+}
+function xeditor(){
+ document.getElementById("extras").innerHTML=(S.extras||[]).map((x,i)=>`<div class="row" style="grid-template-columns:1fr 110px auto;align-items:end;margin-bottom:6px"><div><label>Charge name</label><input data-x="label" data-xi="${i}" value="${esc(x.label)}"></div><div><label>Amount (Rs.)</label><input type="number" min="0" step="any" data-x="amt" data-xi="${i}" value="${x.amt}"></div><button class="del" data-xdel="${i}">Remove</button></div>`).join("");
 }
 function editor(){
  const el=document.getElementById("wins");
  el.innerHTML=S.wins.map((w,i)=>`<div class="win" data-i="${i}">
  <div class="win-h"><span>Window ${i+1}</span>${S.wins.length>1?`<button class="del" data-del="${i}">Remove</button>`:""}</div>
  <div class="row"><div><label>Label</label><input data-w="label" value="${esc(w.label)}"></div><div><label>Type</label><input data-w="type" value="${esc(w.type)}"></div></div>
- <div class="row3"><div><label>Width (mm)</label><input type="number" data-w="w" value="${w.w}"></div><div><label>Height (mm)</label><input type="number" data-w="h" value="${w.h}"></div><div><label>Shutters</label><input type="number" min="1" max="6" data-w="shutters" value="${w.shutters}"></div></div>
+ <div class="row"><div><label>Width (mm)</label><input type="number" data-w="w" value="${w.w}"></div><div><label>Height (mm)</label><input type="number" data-w="h" value="${w.h}"></div></div>
  <label>Window image (replaces the drawing)</label>
  <div class="bar"><input type="file" accept="image/*" data-img="${i}" style="flex:1;min-width:0">${w.img?`<button class="del" data-clr="${i}">Remove image</button>`:""}</div>
  <div class="row3"><div><label>Qty (Nos)</label><input type="number" min="1" data-w="qty" value="${w.qty}"></div><div><label>Rate basis</label><select data-w="mode"><option value="sqft"${w.mode==="sqft"?" selected":""}>Per Sq Ft</option><option value="nos"${w.mode==="nos"?" selected":""}>Per Nos (piece)</option></select></div><div><label>Rate (Rs.)</label><input type="number" min="0" step="any" data-w="rate" value="${w.rate}"></div></div>
@@ -157,7 +177,8 @@ document.addEventListener("input",e=>{
  const t=e.target;
  if(t.dataset.c)S.c[t.dataset.c]=t.value;
  else if(t.dataset.q)S.q[t.dataset.q]=t.value;
- else if(t.dataset.w){const i=+t.closest(".win").dataset.i,k=t.dataset.w;S.wins[i][k]=["w","h","qty","rate","shutters"].includes(k)?(+t.value||0):t.value}
+ else if(t.dataset.x){const x=S.extras[+t.dataset.xi];x[t.dataset.x]=t.dataset.x==="amt"?(+t.value||0):t.value}
+ else if(t.dataset.w){const i=+t.closest(".win").dataset.i,k=t.dataset.w;S.wins[i][k]=["w","h","qty","rate"].includes(k)?(+t.value||0):t.value}
  else return;
  save();preview();
 });
@@ -174,18 +195,20 @@ document.addEventListener("change",e=>{
  r.readAsDataURL(f);
 });
 document.addEventListener("click",e=>{
+ if(e.target.dataset.xdel!==undefined){S.extras.splice(+e.target.dataset.xdel,1);xeditor();save();preview();return}
  if(e.target.dataset.clr!==undefined){S.wins[+e.target.dataset.clr].img="";save();editor();preview();return}
  const d=e.target.dataset.del;
  if(d!==undefined){S.wins.splice(+d,1);editor();save();preview()}
 });
+document.getElementById("addx").onclick=()=>{S.extras.push({label:"Installation charges",amt:0});xeditor();save();preview()};
 document.getElementById("add").onclick=()=>{const l=S.wins[S.wins.length-1]||newWin(1);S.wins.push({...l,label:"W"+(S.wins.length+1)});editor();save();preview()};
 document.getElementById("pdf").onclick=()=>{const t=document.title;document.title=(S.q.no||"Quotation").replace(/[\/\\]/g,"-")+(S.q.client?" - "+S.q.client:"");window.print();setTimeout(()=>document.title=t,500)};
-document.getElementById("reset").onclick=()=>{if(confirm("Reset everything to defaults?")){S=def();save();fill();editor();preview()}};
+document.getElementById("reset").onclick=()=>{if(confirm("Reset everything to defaults?")){S=def();save();fill();editor();xeditor();preview()}};
 document.getElementById("logo").onchange=e=>{
  const f=e.target.files[0];if(!f)return;
  const r=new FileReader();r.onload=()=>{S.c.logo=r.result;save();preview()};r.readAsDataURL(f);
 };
-fill();editor();preview();
+fill();editor();xeditor();preview();
 </script>
 </body>
 </html>
